@@ -19,20 +19,15 @@ futures_dict = {}
 worker_queues = [asyncio.Queue() for _ in range(5)]  # Create 5 worker queues
 result_queue = asyncio.Queue()  # Create a single result queue
 
-def start_worker(worker_instance):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(worker_instance.start())
-    loop.close()
+def start_worker(worker_instance, loop):
+    asyncio.run_coroutine_threadsafe(worker_instance.start(), loop)
 
-def start_responder(responder_instance):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(responder_instance.start())
-    loop.close()
+def start_responder(responder_instance, loop):
+   asyncio.run_coroutine_threadsafe(responder_instance.start(), loop)
 
 @app.on_event("startup")
 async def startup_event():
+    loop = asyncio.get_event_loop()
     # Start the workers in separate threads
     worker_threads = []
     worker_events = []
@@ -41,7 +36,7 @@ async def startup_event():
         worker_config = config["workers"][i]  # Get the configuration for this worker
         worker_event = threading.Event()
         worker_instance = Worker(worker_config, queue, result_queue, worker_event, logger)
-        worker_thread = threading.Thread(target=start_worker, args=(worker_instance,))
+        worker_thread = threading.Thread(target=start_worker, args=(worker_instance, loop))
         worker_thread.start()
         worker_threads.append(worker_thread)
         worker_events.append(worker_event)
@@ -52,7 +47,7 @@ async def startup_event():
 
     # Start the Responder in a separate thread
     responder_instance = Responder(futures_dict, result_queue, logger)
-    responder_thread = threading.Thread(target=start_responder, args=(responder_instance,))
+    responder_thread = threading.Thread(target=start_responder, args=(responder_instance, loop))
     responder_thread.start()
 
     logging.info('Server started, running result listener')
