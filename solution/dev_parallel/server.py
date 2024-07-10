@@ -52,6 +52,9 @@ async def startup_event():
 
     logging.info('Server started, running result listener')
 
+
 @app.post("/process")
 async def process_endpoint(data: Union[str, List[Dict[str, str]], Dict[str, str]]):
     return await process_data(data, worker_queues, futures_dict, logger)
+
+

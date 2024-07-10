@@ -6,8 +6,8 @@ config = {
         {
             "queue": 1,
             "worker_name": "worker1",
-            "model_name": "cardiffnlp/twitter-xlm-roberta-base-sentiment",
-            "model_labels": ["NEGATIVE", "NEUTRAL", "POSITIVE"] # Labels for sentiment model
+            "model_name": "qiuhuachuan/NSFW-detector",
+            "model_labels": ["PORN", "NORMAL"] # Labels for sentiment model
         },
         {
             "queue": 2,

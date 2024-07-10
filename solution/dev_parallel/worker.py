@@ -4,10 +4,12 @@ import asyncio
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 import os
+from torch.nn import DataParallel
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
 
 class Worker:
     def __init__(self, worker_config, message_queue, results_queue, event, logger):
@@ -25,8 +27,17 @@ class Worker:
         logger.info(f"Loading model {self.model_name}...")
         self.model = AutoModelForSequenceClassification.from_pretrained(self.model_name)
         if torch.cuda.is_available():
+            GPU_COUNT = torch.cuda.device_count()
+            logger.info(f"GPU_COUNT {GPU_COUNT}")
+
             self.model = self.model.to('cuda')
             logger.info("Using GPU for model computations.")
+            #check multi gpu
+            if torch.cuda.device_count() > 1:
+                self.model = DataParallel(self.model)  # Использование всех доступных GPU
+                logger.info(f"Using {torch.cuda.device_count()} GPUs for model computations.")
+            else:
+                logger.info("Using 1 GPU for model computations.")
         else:
             logger.info("Using CPU for model computations.")
         logger.info(f"Model {self.model_name} loaded.")
@@ -106,5 +117,4 @@ class Worker:
                             }
             results_dict = json.dumps(results_dict)
             await self.results_queue.put(results_dict)
-
-       
+     
